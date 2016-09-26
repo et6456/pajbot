@@ -2,6 +2,7 @@ import logging
 
 import pajbot.models
 from pajbot.modules import BaseModule
+from pajbot.modules import ModuleSetting
 from pajbot.modules import QuestModule
 
 log = logging.getLogger(__name__)
@@ -13,6 +14,30 @@ class ShowEmoteTokenCommandModule(BaseModule):
     NAME = 'Token Command'
     DESCRIPTION = 'Show a single emote on screen for a few seconds'
     PARENT_MODULE = QuestModule
+    SETTINGS = [
+            ModuleSetting(
+                key='point_cost',
+                label='Point cost',
+                type='number',
+                required=True,
+                placeholder='Point cost',
+                default=0,
+                constraints={
+                    'min_value': 0,
+                    'max_value': 999999,
+                    }),
+                ModuleSetting(
+                    key='token_cost',
+                    label='Token cost',
+                    type='number',
+                    required=True,
+                    placeholder='Token cost',
+                    default=1,
+                    constraints={
+                        'min_value': 0,
+                        'max_value': 15,
+                        }),
+                    ]
 
     def show_emote(self, **options):
         bot = options['bot']
@@ -32,7 +57,8 @@ class ShowEmoteTokenCommandModule(BaseModule):
     def load_commands(self, **options):
         self.commands['#showemote'] = pajbot.models.command.Command.raw_command(
                 self.show_emote,
-                tokens_cost=1,
+                tokens_cost=self.settings['token_cost'],
+                cost=self.settings['point_cost'],
                 description='Show an emote on stream! Costs 1 token.',
                 can_execute_with_whisper=True,
                 examples=[

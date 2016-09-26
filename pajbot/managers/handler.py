@@ -1,7 +1,7 @@
 import logging
 import operator
 
-from pajbot.tbutil import find
+from pajbot.utils import find
 
 log = logging.getLogger('pajbot')
 
@@ -18,6 +18,9 @@ class HandlerManager:
 
         # on_message(source, message, emotes, whisper, urls, event)
         HandlerManager.create_handler('on_message')
+
+        # on_usernotice(source, message, tags)
+        HandlerManager.create_handler('on_usernotice')
 
         # on_commit()
         HandlerManager.create_handler('on_commit')

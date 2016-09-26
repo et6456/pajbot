@@ -16,7 +16,7 @@ from pajbot.managers.redis import RedisManager
 from pajbot.managers.schedule import ScheduleManager
 from pajbot.managers.time import TimeManager
 from pajbot.streamhelper import StreamHelper
-from pajbot.tbutil import time_method  # NOQA
+from pajbot.utils import time_method  # NOQA
 
 log = logging.getLogger(__name__)
 
@@ -117,7 +117,7 @@ class UserSQL:
         self.model_loaded = True
 
         log.debug('[UserSQL] Loading user model for {}'.format(self.username))
-        # from pajbot.tbutil import print_traceback
+        # from pajbot.utils import print_traceback
         # print_traceback()
 
         if self.shared_db_session:
@@ -133,11 +133,15 @@ class UserSQL:
         if not self.model_loaded:
             return
 
-        if save_to_db and not self.shared_db_session:
-            with DBManager.create_session_scope(expire_on_commit=False) as db_session:
-                db_session.add(self.user_model)
+        try:
+            if save_to_db and not self.shared_db_session:
+                with DBManager.create_session_scope(expire_on_commit=False) as db_session:
+                    # log.debug('Calling db_session.add on {}'.format(self.user_model))
+                    db_session.add(self.user_model)
 
-        UserSQLCache.save(self.user_model)
+            UserSQLCache.save(self.user_model)
+        except:
+            log.exception('Caught exception in sql_save while saving {}'.format(self.user_model))
 
     @property
     def id(self):

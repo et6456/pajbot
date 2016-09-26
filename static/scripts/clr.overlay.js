@@ -81,6 +81,7 @@ samples = {
     'uguu': { 'url': 'https://pajlada.se/files/clr/uguu.mp3' },
     'weed': { 'url': 'https://pajlada.se/files/clr/weed.mp3' },
     'wrongdoor': { 'url': 'https://pajlada.se/files/clr/wrongdoor.mp3' },
+    'ryuu': { 'url': 'https://pajlada.se/files/clr/hanzo.mp3' },
 };
 $(document).ready(function() {
     connect_to_ws();
@@ -174,10 +175,10 @@ function show_custom_image(data)
         css_data.height = data.height;
     }
     if (data.x !== undefined) {
-        posx = data.x;
+        css_data.left = data.x + 'px';
     }
     if (data.y !== undefined) {
-        posy = data.y;
+        css_data.top = data.y + 'px';
     }
     var $newdiv = $('<img class="absemote" src="' + url + '">').css(css_data);
     $newdiv.appendTo('body');

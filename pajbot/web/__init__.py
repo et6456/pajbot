@@ -29,13 +29,11 @@ def init(args):
     from pajbot.models.module import ModuleManager
     from pajbot.models.sock import SocketClientManager
     from pajbot.streamhelper import StreamHelper
-    from pajbot.tbutil import load_config
+    from pajbot.utils import load_config
     from pajbot.web.models import errors
     from pajbot.web.utils import download_logo
 
     log = logging.getLogger(__name__)
-
-    log.info('XD')
 
     config = configparser.ConfigParser()
 
@@ -50,12 +48,16 @@ def init(args):
         salt = generate_random_salt()
         config.set('web', 'pleblist_password_salt', salt.decode('utf-8'))
 
+    if 'pleblist_password' not in config['web']:
+        salt = generate_random_salt()
+        config.set('web', 'pleblist_password', salt.decode('utf-8'))
+
     if 'secret_key' not in config['web']:
         salt = generate_random_salt()
         config.set('web', 'secret_key', salt.decode('utf-8'))
 
     if 'logo' not in config['web']:
-        res = download_logo(config['main']['streamer'])
+        res = download_logo(config['webtwitchapi']['client_id'], config['main']['streamer'])
         if res:
             config.set('web', 'logo', 'set')
 

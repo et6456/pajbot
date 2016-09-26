@@ -37,8 +37,8 @@ from pajbot.models.sock import SocketManager
 from pajbot.models.stream import StreamManager
 from pajbot.models.timer import TimerManager
 from pajbot.streamhelper import StreamHelper
-from pajbot.tbutil import time_method
-from pajbot.tbutil import time_since
+from pajbot.utils import time_method
+from pajbot.utils import time_since
 
 log = logging.getLogger(__name__)
 
@@ -48,7 +48,7 @@ class Bot:
     Main class for the twitch bot
     """
 
-    version = '2.8.1'
+    version = '2.8.2'
     date_fmt = '%H:%M'
     admin = None
     url_regex_str = r'\(?(?:(http|https):\/\/)?(?:((?:[^\W\s]|\.|-|[:]{1})+)@{1})?((?:www.)?(?:[^\W\s]|\.|-)+[\.][^\W\s]{2,4}|localhost(?=\/)|\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})(?::(\d*))?([\/]?[^\s\?]*[\/]{1})*(?:\/?([^\s\n\?\[\]\{\}\#]*(?:(?=\.)){1}|[^\s\n\?\[\]\{\}\.\#]*)?([\.]{1}[^\s\?\#]*)?)?(?:\?{1}([^\s\n\#\[\]]*))?([\#][^\s\n]*)?\)?'
@@ -117,7 +117,7 @@ class Bot:
     def __init__(self, config, args=None):
         # Load various configuration variables from the given config object
         # The config object that should be passed through should
-        # come from pajbot.tbutil.load_config
+        # come from pajbot.utils.load_config
         self.load_config(config)
 
         # Update the database scheme if necessary using alembic
@@ -196,6 +196,10 @@ class Bot:
         if 'twitchapi' in self.config:
             twitch_client_id = self.config['twitchapi'].get('client_id', None)
             twitch_oauth = self.config['twitchapi'].get('oauth', None)
+
+        # A client ID is required for the bot to work properly now, give an error for now
+        if twitch_client_id is None:
+            log.error('MISSING CLIENT ID, SET "client_id" VALUE UNDER [twitchapi] SECTION IN CONFIG FILE')
 
         self.twitchapi = TwitchAPI(twitch_client_id, twitch_oauth)
 
@@ -673,6 +677,24 @@ class Bot:
         type = 'whisper' if chatconn in self.whisper_manager else 'normal'
         log.debug('NOTICE {}@{}: {}'.format(type, event.target, event.arguments))
 
+    def on_usernotice(self, chatconn, event):
+        # We use .lower() in case twitch ever starts sending non-lowercased usernames
+        tags = {}
+        for d in event.tags:
+            tags[d['key']] = d['value']
+
+        if 'login' not in tags:
+            return
+
+        username = tags['login']
+
+        with self.users.get_user_context(username) as source:
+            msg = ''
+            if len(event.arguments) > 0:
+                msg = event.arguments[0]
+            HandlerManager.trigger('on_usernotice',
+                    source, msg, tags)
+
     def on_action(self, chatconn, event):
         self.on_pubmsg(chatconn, event)
 
@@ -760,7 +782,7 @@ class Bot:
                 'time_since_minutes': lambda var, args: 'no time' if var == 0 else time_since(var * 60, 0, format='long'),
                 'time_since': lambda var, args: 'no time' if var == 0 else time_since(var, 0, format='long'),
                 'time_since_dt': _filter_time_since_dt,
-                'urlencode': lambda var, args: urllib.parse.urlencode(var),
+                'urlencode': _filter_urlencode,
                 'join': _filter_join,
                 'number_format': _filter_number_format,
                 }
@@ -803,3 +825,7 @@ def _filter_number_format(var, args):
 
 def _filter_strftime(var, args):
     return var.strftime(args[0])
+
+
+def _filter_urlencode(var, args):
+    return urllib.parse.urlencode({'x': var})[2:]
